@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Media Library - Plexify{% endblock %}
+
+{% block content %}
+    <div class="space-y-8">
+        <div class="card">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Your Media Library</h1>
+            <p class="text-gray-600 mb-4">Browse and manage your Plex content</p>
+            <div class="space-x-4">
+                <button class="btn-primary">Movies</button>
+                <button class="btn-secondary">TV Shows</button>
+                <button class="btn-secondary">Music</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Recently Added -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-2">Recently Added</h2>
+                <p class="text-gray-600 mb-4">Latest additions to your library</p>
+                <ul class="space-y-2">
+                    <li class="text-gray-700">Loading recent content...</li>
+                </ul>
+            </div>
+
+            <!-- On Deck -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-2">Continue Watching</h2>
+                <p class="text-gray-600 mb-4">Pick up where you left off</p>
+                <ul class="space-y-2">
+                    <li class="text-gray-700">Loading on deck items...</li>
+                </ul>
+            </div>
+
+            <!-- Library Stats -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-2">Library Stats</h2>
+                <p class="text-gray-600 mb-4">Your collection at a glance</p>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Movies:</span>
+                        <span class="font-semibold">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">TV Shows:</span>
+                        <span class="font-semibold">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Episodes:</span>
+                        <span class="font-semibold">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

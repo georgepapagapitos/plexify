@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Profile - Plexify{% endblock %}
+
+{% block content %}
+    <div class="space-y-8">
+        <div class="card">
+            <div class="flex items-center space-x-4 mb-6">
+                {% if user.thumb_url %}
+                    <img src="{{ user.thumb_url }}" alt="{{ user.plex_username }}"
+                         class="w-16 h-16 rounded-full">
+                {% else %}
+                    <div class="w-16 h-16 rounded-full bg-plex-dark flex items-center justify-center text-white text-2xl">
+                        {{ user.plex_username|make_list|first|upper }}
+                    </div>
+                {% endif %}
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">{{ user.plex_username }}</h1>
+                    <p class="text-gray-600">Plex Account</p>
+                </div>
+            </div>
+
+            {% if user.last_synced %}
+                <p class="text-sm text-gray-500 mb-4">Last synced: {{ user.last_synced|date:"F j, Y, g:i a" }}</p>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Account Details -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4">Account Details</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Username</label>
+                        <p class="mt-1 text-gray-900">{{ user.plex_username }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Email</label>
+                        <p class="mt-1 text-gray-900">{{ user.email }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Account ID</label>
+                        <p class="mt-1 text-gray-900">{{ user.plex_account_id }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connected Servers -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4">Connected Servers</h2>
+                {% if user.plex_servers.exists %}
+                    <ul class="space-y-4">
+                        {% for server in user.plex_servers.all %}
+                            <li class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ server.name }}</p>
+                                    <p class="text-sm text-gray-600">Version {{ server.version }}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Connected
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-gray-600">No servers connected</p>
+                {% endif %}
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4">Settings</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900">Auto-Sync Libraries</p>
+                            <p class="text-sm text-gray-600">Automatically sync library changes</p>
+                        </div>
+                        <button class="btn-secondary">Configure</button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900">Refresh All Data</p>
+                            <p class="text-sm text-gray-600">Sync all data from Plex</p>
+                        </div>
+                        <button class="btn-secondary">Sync Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+                <div class="space-y-4">
+                    <p class="text-gray-600">Activity log coming soon...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

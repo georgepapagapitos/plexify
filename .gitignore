@@ -1,0 +1,117 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Virtual Environment
+venv/
+ENV/
+
+# Environment Variables
+.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test Coverage
+.coverage
+htmlcov/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Static files
+staticfiles/
+
+# Logs
+logs/
+*.log
+
+# Node/NPM/Tailwind
+node_modules/
+package-lock.json
+.cache/
+.parcel-cache/
+dist/
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Debug files
+debug.log
+*.debug
+
+# Database
+*.sqlite
+*.sqlite3
+*.psql
+*.mysql
+*.dump
+
+# Local development
+# Keep base settings files but ignore local overrides
+/config/settings/local_*.py
+/config/settings/*_local.py
+/config/settings/custom_*.py
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Media and user uploaded content
+media_root/
+uploads/
+
+# Compiled CSS
+static/css/styles.css
+static/dist/
+
+# Test artifacts
+.pytest_cache/
+.tox/
+__snapshots__/
+.coverage.*
+.hypothesis/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Secrets
+*.pem
+*.key
+*.cert
+secrets.yaml

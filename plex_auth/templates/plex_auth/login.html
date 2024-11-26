@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="login-container">
+        <button id="plexLoginButton" class="plex-login-btn">Login with Plex</button>
+        <div id="loginStatus" style="display: none;">
+            Authenticating with Plex...
+        </div>
+        <div id="debugInfo" style="display: none; margin-top: 20px; padding: 10px; background: #f5f5f5;">
+        <pre id="debugLog"></pre>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        let authWindow = null;
+        let pinCheckInterval = null;
+
+        function appendDebug(message) {
+            const debugLog = document.getElementById('debugLog');
+            const timestamp = new Date().toISOString();
+            debugLog.textContent += `${timestamp}: ${message}\n`;
+            console.log(message);
+        }
+
+        document.getElementById('plexLoginButton').addEventListener('click', function() {
+            document.getElementById('loginStatus').style.display = 'block';
+            document.getElementById('debugInfo').style.display = 'block';
+            this.disabled = true;
+
+            appendDebug('Opening Plex auth window...');
+
+        // First, clean up any existing windows
+            if (authWindow && !authWindow.closed) {
+                authWindow.close();
+            }
+
+        // Clear any existing intervals
+            if (pinCheckInterval) {
+                clearInterval(pinCheckInterval);
+            }
+
+            const width = 500;
+            const height = 700;
+            const left = (window.screen.width / 2) - (width / 2);
+            const top = (window.screen.height / 2) - (height / 2);
+
+            const authUrl = "{{ auth_url|safe }}";
+            appendDebug(`Auth URL: ${authUrl}`);
+
+            try {
+                authWindow = window.open(
+                    authUrl,
+                    'PlexAuth',
+                    `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
+                );
+
+                if (authWindow) {
+                    appendDebug('Auth window opened successfully');
+                // Slight delay before starting pin check
+                    setTimeout(() => startPinCheck("{{ pin_id }}"), 1000);
+                } else {
+                    appendDebug('Failed to open auth window - popup might be blocked');
+                    document.getElementById('loginStatus').textContent =
+                        'Please allow popups for this site and try again.';
+                    this.disabled = false;
+                }
+            } catch (error) {
+                appendDebug(`Error opening auth window: ${error}`);
+                document.getElementById('loginStatus').textContent =
+                    'Error opening auth window. Please try again.';
+                this.disabled = false;
+            }
+        });
+
+        function startPinCheck(pinId) {
+            appendDebug(`Starting pin check for ID: ${pinId}`);
+            let attempts = 0;
+            const maxAttempts = 300; // 5 minutes worth of checks
+
+            async function checkPin() {
+                try {
+                    attempts++;
+                    appendDebug(`Checking pin status (attempt ${attempts})...`);
+
+                    const response = await fetch(`/auth/check-pin/?pin_id=${pinId}`);
+                    const data = await response.json();
+                    appendDebug(`Pin check response: ${JSON.stringify(data)}`);
+
+                    if (data.status === 'authenticated') {
+                        appendDebug('Authentication successful!');
+                        clearInterval(pinCheckInterval);
+
+                        if (authWindow && !authWindow.closed) {
+                            authWindow.close();
+                        }
+
+                        appendDebug(`Redirecting to: ${data.redirect_url}`);
+                        window.location.href = data.redirect_url;
+                        return;
+                    }
+
+                // Only check window state after several attempts and only if really closed
+                    if (attempts > 5 && (!authWindow || (authWindow && authWindow.closed))) {
+                        let reallyClose = true;
+
+                    // Double check after a short delay
+                        setTimeout(() => {
+                            if (!authWindow || (authWindow && authWindow.closed)) {
+                                appendDebug('Auth window confirmed closed');
+                                clearInterval(pinCheckInterval);
+                                document.getElementById('loginStatus').textContent =
+                                    'Authentication window closed. Please try again.';
+                                document.getElementById('plexLoginButton').disabled = false;
+                            }
+                        }, 1000);
+
+                        return;
+                    }
+
+                // Check if we've exceeded max attempts
+                    if (attempts >= maxAttempts) {
+                        appendDebug('Maximum attempts reached');
+                        clearInterval(pinCheckInterval);
+                        document.getElementById('loginStatus').textContent =
+                            'Authentication timeout. Please try again.';
+                        document.getElementById('plexLoginButton').disabled = false;
+
+                        if (authWindow && !authWindow.closed) {
+                            authWindow.close();
+                        }
+                        return;
+                    }
+
+                } catch (error) {
+                    appendDebug(`Error during pin check: ${error}`);
+                    document.getElementById('loginStatus').textContent =
+                        'Checking authentication status...';
+                }
+            }
+
+        // Start polling every second
+            pinCheckInterval = setInterval(checkPin, 1000);
+        }
+
+    // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (authWindow && !authWindow.closed) {
+                authWindow.close();
+            }
+            if (pinCheckInterval) {
+                clearInterval(pinCheckInterval);
+            }
+        });
+    </script>
+{% endblock %}
