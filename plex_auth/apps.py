@@ -1,3 +1,5 @@
+# plex_auth/apps.py
+
 from django.apps import AppConfig
 
 

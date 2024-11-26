@@ -1,13 +1,22 @@
+{# core/templates/core/profile.html #}
+
 {% extends 'base.html' %}
-{% block title %}Profile - Plexify{% endblock %}
+{% load core_filters %}
+
+{% block title %}Profile - Plexify{% endblock title %}
 
 {% block content %}
+    {# Main container with vertical spacing between sections #}
     <div class="space-y-8">
+        {# Profile Header Card #}
         <div class="card">
             <div class="flex items-center space-x-4 mb-6">
+                {# User Avatar - either Plex thumbnail or generated initial #}
                 {% if user.thumb_url %}
-                    <img src="{{ user.thumb_url }}" alt="{{ user.plex_username }}"
-                         class="w-16 h-16 rounded-full">
+                    <img src="{{ user.thumb_url }}"
+                         alt="{{ user.plex_username }}'s profile picture"
+                         class="w-16 h-16 rounded-full object-cover"
+                         onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-16 h-16 rounded-full bg-plex-dark flex items-center justify-center text-white text-2xl\'>{{ user.plex_username|make_list|first|upper }}</div>'">
                 {% else %}
                     <div class="w-16 h-16 rounded-full bg-plex-dark flex items-center justify-center text-white text-2xl">
                         {{ user.plex_username|make_list|first|upper }}
@@ -19,44 +28,52 @@
                 </div>
             </div>
 
+            {# Last Sync Information #}
             {% if user.last_synced %}
-                <p class="text-sm text-gray-500 mb-4">Last synced: {{ user.last_synced|date:"F j, Y, g:i a" }}</p>
+                <p class="text-sm text-gray-500 mb-4">
+                    Last synced: {{ user.last_synced|date:"F j, Y, g:i a" }}
+                    <span class="ml-2 text-plex-yellow hover:text-yellow-500 cursor-pointer"
+                          title="Sync now"
+                          onclick="document.getElementById('syncNowBtn').click()">
+                        ↻
+                    </span>
+                </p>
             {% endif %}
         </div>
 
+        {# Main Content Grid #}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Account Details -->
+            {# Account Details Section #}
             <div class="card">
                 <h2 class="text-xl font-semibold mb-4">Account Details</h2>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600">Username</label>
-                        <p class="mt-1 text-gray-900">{{ user.plex_username }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600">Email</label>
-                        <p class="mt-1 text-gray-900">{{ user.email }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600">Account ID</label>
-                        <p class="mt-1 text-gray-900">{{ user.plex_account_id }}</p>
-                    </div>
+                    {% for field in user_info %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">{{ field.label }}</label>
+                            <p class="mt-1 text-gray-900">{{ field.value|default:"Not provided" }}</p>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
 
-            <!-- Connected Servers -->
+            {# Connected Servers Section #}
             <div class="card">
                 <h2 class="text-xl font-semibold mb-4">Connected Servers</h2>
-                {% if user.plex_servers.exists %}
+                {% if servers %}
                     <ul class="space-y-4">
-                        {% for server in user.plex_servers.all %}
+                        {% for server in servers %}
                             <li class="flex justify-between items-center">
                                 <div>
                                     <p class="font-medium text-gray-900">{{ server.name }}</p>
-                                    <p class="text-sm text-gray-600">Version {{ server.version }}</p>
+                                    <p class="text-sm text-gray-600">
+                                        Version {{ server.version }}
+                                        <span class="text-xs text-gray-500">
+                                            • Last seen {{ server.last_seen|timesince }} ago
+                                        </span>
+                                    </p>
                                 </div>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Connected
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if server.is_active %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ server.is_active|yesno:"Connected,Inactive" }}
                                 </span>
                             </li>
                         {% endfor %}
@@ -66,34 +83,170 @@
                 {% endif %}
             </div>
 
-            <!-- Settings -->
+            {# Settings Section #}
             <div class="card">
                 <h2 class="text-xl font-semibold mb-4">Settings</h2>
                 <div class="space-y-4">
+                    {# Auto-Sync Settings #}
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium text-gray-900">Auto-Sync Libraries</p>
                             <p class="text-sm text-gray-600">Automatically sync library changes</p>
                         </div>
-                        <button class="btn-secondary">Configure</button>
+                        <button
+                            class="btn-secondary"
+                            id="configureAutoSyncBtn"
+                            data-modal-target="autoSyncModal"
+                            aria-label="Configure auto-sync settings">
+                            Configure
+                        </button>
                     </div>
+
+                    {# Manual Sync Option #}
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium text-gray-900">Refresh All Data</p>
                             <p class="text-sm text-gray-600">Sync all data from Plex</p>
                         </div>
-                        <button class="btn-secondary">Sync Now</button>
+                        <button
+                            class="btn-secondary"
+                            id="syncNowBtn"
+                            onclick="handleManualSync()"
+                            aria-label="Start manual sync">
+                            <span class="sync-button-text">Sync Now</span>
+                            <span class="sync-spinner hidden">
+                                {# Spinner SVG #}
+                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+
+                    {# Additional Settings #}
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900">Theme Preference</p>
+                            <p class="text-sm text-gray-600">Choose light or dark mode</p>
+                        </div>
+                        <select
+                            class="form-select btn-secondary"
+                            id="themeSelect"
+                            onchange="handleThemeChange(this.value)"
+                            aria-label="Select theme preference">
+                            <option value="system">System</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Activity -->
+            {# Activity Section #}
             <div class="card">
                 <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
                 <div class="space-y-4">
-                    <p class="text-gray-600">Activity log coming soon...</p>
+                    {% if activities %}
+                        <ul class="divide-y divide-gray-200">
+                            {% for activity in activities %}
+                                <li class="py-3">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="text-sm text-gray-500">
+                                            {{ activity.timestamp|date:"M d, H:i" }}
+                                        </span>
+                                        <span class="text-sm">
+                                            {{ activity.description }}
+                                        </span>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-gray-600">No recent activity</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-{% endblock %}
+
+    {# Auto-Sync Configuration Modal #}
+    <div id="autoSyncModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium leading-6 text-gray-900">Auto-Sync Settings</h3>
+                <div class="mt-2 px-7 py-3">
+                    {# Modal content will be populated dynamically #}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        // Handle manual sync action
+        async function handleManualSync() {
+            const button = document.getElementById('syncNowBtn');
+            const buttonText = button.querySelector('.sync-button-text');
+            const spinner = button.querySelector('.sync-spinner');
+
+            // Disable button and show spinner
+            button.disabled = true;
+            buttonText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/sync/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken(),
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Sync failed');
+                }
+
+                // Show success message
+                showNotification('Sync started successfully', 'success');
+            } catch (error) {
+                console.error('Sync error:', error);
+                showNotification('Failed to start sync', 'error');
+            } finally {
+                // Re-enable button and hide spinner
+                button.disabled = false;
+                buttonText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+
+            // Handle theme changes
+        function handleThemeChange(theme) {
+            // Save preference to backend
+            fetch('/api/preferences/theme/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+                body: JSON.stringify({ theme })
+            });
+
+            // Apply theme immediately
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(theme);
+        }
+
+        // Utility function to get CSRF token
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            // Implementation depends on your notification system
+            console.log(`${type}: ${message}`);
+        }
+    </script>
+{% endblock extra_js %}
