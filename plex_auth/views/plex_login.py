@@ -25,12 +25,15 @@ class PlexLoginView(TemplateView):
         context = super().get_context_data(**kwargs)
         try:
             pin_response = PlexOAuth.get_pin()
+
             if not pin_response:
                 logger.error("Failed to get PIN from Plex")
                 context["error"] = "Unable to initialize Plex authentication"
                 return context
 
+            # Generate auth URL from the pin code
             auth_url = PlexOAuth.get_auth_url(pin_response["code"])
+
             context.update(
                 {
                     "auth_url": auth_url,

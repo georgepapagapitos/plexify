@@ -1,3 +1,5 @@
+# config/settings/base.py
+
 import os
 import uuid
 from pathlib import Path
@@ -8,7 +10,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
-PLEX_CLIENT_IDENTIFIER = os.getenv("PLEX_CLIENT_IDENTIFIER", str(uuid.uuid4()))
+
+TIME_ZONE = "America/Chicago"
+USE_TZ = True
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -107,16 +111,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-
-if DEBUG:
-    STATICFILES_DIRS = [
-        BASE_DIR / "static",
-    ]
-else:
+if not DEBUG:
     STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files
@@ -184,7 +182,7 @@ CSRF_COOKIE_SECURE = True if not DEBUG else False
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 
 # Plex configuration
-PLEX_CLIENT_IDENTIFIER = os.getenv("PLEX_CLIENT_IDENTIFIER")
+PLEX_CLIENT_IDENTIFIER = os.getenv("PLEX_CLIENT_IDENTIFIER", str(uuid.uuid4()))
 PLEX_TOKEN = os.getenv("PLEX_TOKEN")
 PLEX_REDIRECT_URI = os.getenv("PLEX_REDIRECT_URI")
 

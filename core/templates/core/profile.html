@@ -1,7 +1,7 @@
 {# core/templates/core/profile.html #}
 
 {% extends 'base.html' %}
-{% load core_filters %}
+{% load tz %}
 
 {% block title %}Profile - Plexify{% endblock title %}
 
@@ -31,7 +31,7 @@
             {# Last Sync Information #}
             {% if user.last_synced %}
                 <p class="text-sm text-gray-500 mb-4">
-                    Last synced: {{ user.last_synced|date:"F j, Y, g:i a" }}
+                    Last synced: {% localtime on %}{{ user.last_synced|date:"F j, Y, g:i a" }}{% endlocaltime %}
                     <span class="ml-2 text-plex-yellow hover:text-yellow-500 cursor-pointer"
                           title="Sync now"
                           onclick="document.getElementById('syncNowBtn').click()">

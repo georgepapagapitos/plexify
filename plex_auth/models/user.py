@@ -4,6 +4,10 @@ import logging
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
+
+from plex_auth.utils.exceptions import PlexAPIError
+from plex_auth.utils.plex_api import PlexAPI
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +50,54 @@ class PlexUser(AbstractUser):
         Sets the username field to match plex_username if not already set,
         maintaining consistency between Django and Plex identifiers.
         """
+
         if self.plex_username and not self.username:
             logger.debug(
                 f"Setting username to match plex_username: {self.plex_username}"
             )
             self.username = self.plex_username
         super().save(*args, **kwargs)
+
+    def sync_servers(self) -> None:
+        """
+        Synchronize Plex servers for this user.
+
+        Discovers available Plex servers and updates the local database records
+        accordingly. Updates the last_synced timestamp on successful completion.
+
+        Raises:
+            PlexAPIError: If there's an error communicating with Plex API
+        """
+
+        logger.debug(f"Starting server sync for user {self.plex_username}")
+        try:
+            # Discover available servers
+            plex_api = PlexAPI(self.plex_token)
+            available_servers = plex_api.discover_servers()
+
+            # Update or create server records
+            for server_data in available_servers:
+                self.plex_servers.update_or_create(
+                    machine_identifier=server_data["machine_identifier"],
+                    defaults={
+                        "name": server_data["name"],
+                        "url": server_data["url"],
+                        "token": server_data["token"],
+                        "version": server_data["version"],
+                        "last_seen": timezone.now(),
+                    },
+                )
+
+            # Update sync timestamp
+            self.last_synced = timezone.now()
+            self.save(update_fields=["last_synced"])
+
+            logger.info(
+                f"Successfully synced {len(available_servers)} servers for user {self.plex_username}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to sync servers for user {self.plex_username}: {str(e)}"
+            )
+            raise PlexAPIError(f"Failed to sync servers: {str(e)}")

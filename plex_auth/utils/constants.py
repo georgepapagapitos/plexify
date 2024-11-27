@@ -3,8 +3,10 @@
 from typing import Final
 
 # API endpoints
+PLEX_API_BASE: Final = "https://plex.tv/api/v2"
 PLEX_AUTH_URL: Final = "https://app.plex.tv/auth#?"
-PLEX_PIN_URL: Final = "https://plex.tv/api/v2/pins"
+PLEX_PIN_URL: Final = f"{PLEX_API_BASE}/pins"
+PLEX_RESOURCES_URL: Final = f"{PLEX_API_BASE}/resources"
 
 # Request timeouts (in seconds)
 REQUEST_TIMEOUT: Final = 10

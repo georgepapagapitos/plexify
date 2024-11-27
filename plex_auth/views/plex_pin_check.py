@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 class PlexPinCheckView(View):
     """
     Checks the status of a Plex authentication PIN.
-
     This view is called periodically by the frontend to check if the user
     has completed the Plex authentication process.
     """
 
-    def get(self, request: HttpRequest):
+    def get(self, request: HttpRequest) -> JsonResponse:
         pin_id = request.GET.get("pin_id")
+
         if not pin_id:
             logger.warning("Pin check attempted without PIN ID")
             return JsonResponse(
@@ -33,18 +33,18 @@ class PlexPinCheckView(View):
             logger.debug(f"Checking PIN status: {pin_id}")
             response = PlexOAuth.check_pin(pin_id)
 
-            if not response:
+            # If no response or if token not present, authentication is still pending
+            if not response or not response.get("authToken"):
                 return JsonResponse({"status": "pending"})
 
-            auth_token = response.get("authToken")
-            if not auth_token:
-                return JsonResponse({"status": "pending"})
+            # Get auth token and account data
+            auth_token = response["authToken"]
+            account_data = response.get("account", {})
 
             # Attempt authentication with the token
             logger.info(f"Authenticating user with PIN: {pin_id}")
-            backend = PlexAuthenticationBackend()
-            user = backend.authenticate(
-                request, token=auth_token, account_data=response.get("account", {})
+            user = PlexAuthenticationBackend().authenticate(
+                request, token=auth_token, account_data=account_data
             )
 
             if not user:
@@ -55,8 +55,8 @@ class PlexPinCheckView(View):
 
             # Log the user in
             login(request, user, backend="plex_auth.backends.PlexAuthenticationBackend")
-
             logger.info(f"User authenticated successfully: {user.username}")
+
             return JsonResponse(
                 {"status": "authenticated", "redirect_url": reverse("core:home")}
             )
