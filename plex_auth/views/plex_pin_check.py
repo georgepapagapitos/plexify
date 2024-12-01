@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.views.generic import View
 
 from plex_auth.backends import PlexAuthenticationBackend
-from plex_auth.utils import PlexAPIError, PlexOAuth
+from plex_auth.utils import PlexManagerError, PlexOAuth
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class PlexPinCheckView(View):
                 {"status": "authenticated", "redirect_url": reverse("core:home")}
             )
 
-        except PlexAPIError as e:
+        except PlexManagerError as e:
             logger.error(f"Plex API error during pin check: {str(e)}")
             return JsonResponse(
                 {"status": "error", "message": "Failed to check authentication status"},

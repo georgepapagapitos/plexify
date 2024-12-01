@@ -16,3 +16,9 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+
+
+# Celery Configuration
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_TASK_ALWAYS_EAGER = True

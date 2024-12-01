@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from plex_auth.utils import PlexAPIError
+from plex_auth.utils import PlexManagerError
 
 
 class TestPlexCallbackView(TestCase):
@@ -62,7 +62,7 @@ class TestPlexCallbackView(TestCase):
     @patch("plex_auth.utils.PlexOAuth.check_pin")
     def test_callback_pin_check_error(self, mock_check_pin):
         """Test callback when pin check fails"""
-        mock_check_pin.side_effect = PlexAPIError("PIN check failed")
+        mock_check_pin.side_effect = PlexManagerError("PIN check failed")
 
         response = self.client.get(reverse("plex_auth:callback"), {"pin_id": "12345"})
         self.assertEqual(response.status_code, 302)

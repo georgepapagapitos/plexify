@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third party apps
+    "celery",
     "debug_toolbar",
     # Local apps
     "core.apps.CoreConfig",
@@ -45,6 +46,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
+    "core.middleware.TimezoneMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -95,7 +97,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = "plex_auth.PlexUser"
+AUTH_USER_MODEL = "plex_auth.PlexAccount"
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
@@ -111,14 +113,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-if not DEBUG:
-    STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files
-MEDIA_URL = "media/"
+MEDIA_URL = "/uploads/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
@@ -190,3 +191,10 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
+
+
+# Celery Configuration
+CELERY_TASK_ALWAYS_EAGER = False  # Set to True in local.py for synchronous execution
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]

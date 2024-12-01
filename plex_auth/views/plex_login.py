@@ -6,7 +6,7 @@ from typing import Any, Dict
 from django.conf import settings
 from django.views.generic import TemplateView
 
-from plex_auth.utils import PlexAPIError, PlexOAuth
+from plex_auth.utils import PlexManagerError, PlexOAuth
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class PlexLoginView(TemplateView):
             logger.info(f"Generated auth URL for PIN ID: {pin_response['id']}")
             return context
 
-        except PlexAPIError as e:
+        except PlexManagerError as e:
             logger.error(f"Plex API error during login: {str(e)}")
             context["error"] = "Plex authentication service unavailable"
             return context

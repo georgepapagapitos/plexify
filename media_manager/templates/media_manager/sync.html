@@ -1,0 +1,167 @@
+{# media_manager/templates/media_manager/sync.html #}
+
+{% extends 'base.html' %}
+
+{% block title %}Sync Movies - Plexify{% endblock %}
+
+{% block content %}
+    <div class="space-y-8">
+        {% csrf_token %}
+        <div class="bg-white shadow-sm rounded-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Movie Library Sync</h1>
+                <button id="syncAllBtn" class="bg-plex-yellow text-white px-4 py-2 rounded-md hover:bg-plex-yellow-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-plex-yellow">
+                    Sync All Libraries
+                </button>
+            </div>
+
+            {% if server_libraries %}
+                <div class="space-y-6">
+                    {% for server in server_libraries %}
+                        <div class="border rounded-lg p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ server.server.name }}</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {% for library in server.libraries %}
+                                    <div class="border rounded p-4 bg-gray-50">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h3 class="font-medium text-gray-900">{{ library.title }}</h3>
+                                                <p class="text-sm text-gray-600">{{ library.count }} items</p>
+                                            </div>
+                                            <button
+                                                class="sync-library-btn bg-plex-yellow text-white px-3 py-1 rounded text-sm hover:bg-plex-yellow-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-plex-yellow"
+                                                data-server-id="{{ server.server.machine_identifier }}"
+                                                data-library-key="{{ library.key }}">
+                                                Sync
+                                            </button>
+                                        </div>
+                                        <div class="sync-status hidden mt-2 text-sm"></div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-600">No movie libraries found.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;  // Get CSRF token
+
+            function updateSyncStatus(taskId, statusElement) {
+                const checkStatus = async () => {
+                    try {
+                        const response = await fetch(`/movies/sync/status/?task_id=${taskId}`);
+                        const data = await response.json();
+
+                        if (data.status === 'completed') {
+                            if (data.error) {
+                                statusElement.textContent = `Error: ${data.error}`;
+                                statusElement.classList.remove('text-gray-600');
+                                statusElement.classList.add('text-red-600');
+                            } else {
+                                const result = data.result;
+                                statusElement.textContent = `Sync complete - Added: ${result.added}, Updated: ${result.updated}, Total: ${result.total}`;
+                                statusElement.classList.remove('text-gray-600');
+                                statusElement.classList.add('text-green-600');
+                            }
+                            return true;
+                        }
+                        return false;
+                    } catch (error) {
+                        statusElement.textContent = 'Error checking sync status';
+                        statusElement.classList.add('text-red-600');
+                        return true;
+                    }
+                };
+
+                const intervalId = setInterval(async () => {
+                    const done = await checkStatus();
+                    if (done) clearInterval(intervalId);
+                }, 2000);
+            }
+
+            // Individual library sync
+            document.querySelectorAll('.sync-library-btn').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const serverId = this.dataset.serverId;
+                    const libraryKey = this.dataset.libraryKey;
+                    const statusElement = this.closest('.border').querySelector('.sync-status');
+
+                    try {
+                        this.disabled = true;
+                        statusElement.textContent = 'Starting sync...';
+                        statusElement.classList.remove('hidden', 'text-red-600', 'text-green-600');
+                        statusElement.classList.add('text-gray-600');
+
+                        const response = await fetch('/movies/sync/trigger/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': csrfToken,
+                            },
+                            body: `sync_type=library&server_id=${serverId}&library_key=${libraryKey}`,
+                        });
+
+                        const data = await response.json();
+
+                        if (data.status === 'success') {
+                            statusElement.textContent = 'Sync in progress...';
+                            updateSyncStatus(data.task_id, statusElement);
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    } catch (error) {
+                        statusElement.textContent = `Error: ${error.message}`;
+                        statusElement.classList.remove('text-gray-600');
+                        statusElement.classList.add('text-red-600');
+                    } finally {
+                        this.disabled = false;
+                    }
+                });
+            });
+
+            // Sync all libraries
+            document.getElementById('syncAllBtn').addEventListener('click', async function() {
+                try {
+                    this.disabled = true;
+                    this.textContent = 'Starting sync...';
+
+                    const response = await fetch('/movies/sync/trigger/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken,
+                        },
+                        body: 'sync_type=all',
+                    });
+
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        document.querySelectorAll('.sync-status').forEach(status => {
+                            status.classList.remove('hidden');
+                            status.textContent = 'Sync queued...';
+                            status.classList.add('text-gray-600');
+                        });
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    alert(`Error starting sync: ${error.message}`);
+                } finally {
+                    this.disabled = false;
+                    this.textContent = 'Sync All Libraries';
+                }
+            });
+        });
+    </script>
+{% endblock %}

@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from plex_auth.utils import PlexAPIError
+from plex_auth.utils import PlexManagerError
 
 
 class TestPlexLoginView(TestCase):
@@ -36,7 +36,7 @@ class TestPlexLoginView(TestCase):
     @patch("plex_auth.utils.PlexOAuth.get_pin")
     def test_login_view_pin_failure(self, mock_get_pin):
         """Test login view when PIN generation fails"""
-        mock_get_pin.side_effect = PlexAPIError("PIN generation failed")
+        mock_get_pin.side_effect = PlexManagerError("PIN generation failed")
 
         response = self.client.get(reverse("plex_auth:login"))
         self.assertEqual(response.status_code, 200)  # We show error in the template

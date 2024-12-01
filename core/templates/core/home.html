@@ -1,30 +1,38 @@
+{# core/templates/core/home.html #}
+
 {% extends 'base.html' %}
-
 {% block title %}Home - Plexify{% endblock %}
-
 {% block content %}
     <div class="space-y-8">
         <div class="card">
             <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to Plexify</h1>
             <p class="text-gray-600 mb-4">Your personal Plex media manager</p>
             <div class="space-x-4">
-                <button class="btn-primary">Primary Button</button>
-                <button class="btn-secondary">Secondary Button</button>
+                <a href="{% url 'media_manager:random_movie' %}" class="btn-primary">Random Movie</a>
+                <a href="{% url 'media_manager:movie_sync' %}" class="btn-secondary">Sync Movies</a>
             </div>
         </div>
-
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="card">
                 <h2 class="text-xl font-semibold mb-2">Browse Media</h2>
                 <p class="text-gray-600">Access your entire Plex library</p>
+                <a href="/media" class="mt-4 inline-block text-plex-yellow hover:text-plex-yellow-dark">
+                    Browse Now →
+                </a>
             </div>
             <div class="card">
                 <h2 class="text-xl font-semibold mb-2">Random Pick</h2>
                 <p class="text-gray-600">Discover something new to watch</p>
+                <a href="{% url 'media_manager:random_movie' %}" class="mt-4 inline-block text-plex-yellow hover:text-plex-yellow-dark">
+                    Find a Movie →
+                </a>
             </div>
             <div class="card">
                 <h2 class="text-xl font-semibold mb-2">Manage Settings</h2>
                 <p class="text-gray-600">Configure your Plex connection</p>
+                <a href="/profile" class="mt-4 inline-block text-plex-yellow hover:text-plex-yellow-dark">
+                    Settings →
+                </a>
             </div>
         </div>
     </div>

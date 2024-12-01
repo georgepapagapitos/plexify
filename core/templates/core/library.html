@@ -1,0 +1,92 @@
+{# core/templates/core/library.html #}
+
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mx-auto px-4 py-8">
+        {% if error %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ error }}</span>
+            </div>
+        {% else %}
+            {# Library Header #}
+            <div class="mb-8">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">{{ info.title }}</h1>
+                    <span class="text-gray-600">{{ server_name }}</span>
+                </div>
+                <div class="mt-2 text-sm text-gray-600">
+                    <p>{{ info.total_items }} items • Last updated: {{ info.modified_at|date:"F j, Y" }}</p>
+                </div>
+            </div>
+
+            {# Library Items Grid #}
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {% for item in items %}
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        {% if item.thumb %}
+                            <div class="relative pb-[150%]">
+                                <img
+                                    src="{{ item.thumb }}"
+                                    alt="{{ item.title }}"
+                                    class="absolute inset-0 w-full h-full object-cover"
+                                    loading="lazy"
+                                >
+                                {% if item.resolution %}
+                                    <span class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                                        {{ item.resolution }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="p-4">
+                            <h3 class="font-semibold text-lg mb-1">{{ item.title }}</h3>
+                            {% if item.year %}
+                                <p class="text-sm text-gray-600 mb-2">{{ item.year }}</p>
+                            {% endif %}
+
+                            {% if info.type == 'movie' %}
+                                {% if item.genres %}
+                                    <div class="flex flex-wrap gap-2 mb-2">
+                                        {% for genre in item.genres %}
+                                            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">{{ genre }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if item.directors %}
+                                    <p class="text-sm text-gray-600">
+                                        Director: {{ item.directors|join:", " }}
+                                    </p>
+                                {% endif %}
+                            {% elif info.type == 'show' %}
+                                <p class="text-sm text-gray-600">
+                                    {{ item.season_count }} Seasons • {{ item.episode_count }} Episodes
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {# Pagination #}
+            {% if has_previous or has_next %}
+                <div class="mt-8 flex justify-center space-x-4">
+                    {% if has_previous %}
+                        <a href="?page={{ current_page|add:'-1' }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded">
+                            Previous
+                        </a>
+                    {% endif %}
+
+                    <span class="px-4 py-2">Page {{ current_page }}</span>
+
+                    {% if has_next %}
+                        <a href="?page={{ current_page|add:'1' }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded">
+                            Next
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

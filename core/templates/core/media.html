@@ -1,56 +1,241 @@
+{# core/templates/core/media.html #}
+
 {% extends 'base.html' %}
-{% block title %}Media Library - Plexify{% endblock %}
+{% load media_filters %}
+{% block title %}Media Library - Plexify{% endblock title %}
 
 {% block content %}
     <div class="space-y-8">
-        <div class="card">
+        {# Header with Library Filter Tabs #}
+        <div class="bg-white rounded-lg shadow p-6">
             <h1 class="text-3xl font-bold text-gray-900 mb-4">Your Media Library</h1>
             <p class="text-gray-600 mb-4">Browse and manage your Plex content</p>
-            <div class="space-x-4">
-                <button class="btn-primary">Movies</button>
-                <button class="btn-secondary">TV Shows</button>
-                <button class="btn-secondary">Music</button>
+
+            {# Library Filter Tabs #}
+            <div class="flex space-x-4 border-b border-gray-200">
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors active:border-plex-yellow active:text-plex-yellow active:font-medium" data-type="all">All</button>
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors" data-type="movie">Movies</button>
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors" data-type="show">TV Shows</button>
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors" data-type="artist">Music</button>
             </div>
         </div>
 
+        {# Libraries Section #}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Libraries</h2>
+            {% if libraries %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {% for library in libraries %}
+                        <a href="{% url 'core:library' server_id=library.server_id library_key=library.key %}"
+                           class="block bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+                            <div class="relative pb-[56.25%]">
+                                {% if library.thumb %}
+                                    <img src="{{ library.thumb }}?X-Plex-Token={{ request.user.plex_token }}"
+                                         alt="{{ library.title }}"
+                                         class="absolute inset-0 w-full h-full object-cover rounded-t-lg">
+                                {% else %}
+                                    <div class="absolute inset-0 bg-gray-100 flex items-center justify-center rounded-t-lg">
+                                        <span class="text-gray-500">{{ library.title }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="p-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900">{{ library.title }}</h3>
+                                        <p class="text-sm text-gray-600">{{ library.count }} items</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">{{ library.server_name }}</span>
+                                </div>
+                                {% if library.type in 'movie,show' %}
+                                    <div class="mt-2 text-sm text-gray-600">
+                                        {{ library.unwatched_count }} unwatched
+                                    </div>
+                                {% elif library.type == 'artist' %}
+                                    <div class="mt-2 text-sm text-gray-600">
+                                        {{ library.albumCount }} albums
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-600">No libraries found</p>
+            {% endif %}
+        </div>
+
+        {# Main Content Grid #}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Recently Added -->
-            <div class="card">
-                <h2 class="text-xl font-semibold mb-2">Recently Added</h2>
-                <p class="text-gray-600 mb-4">Latest additions to your library</p>
-                <ul class="space-y-2">
-                    <li class="text-gray-700">Loading recent content...</li>
-                </ul>
+            {# Recently Added #}
+            <div class="bg-white rounded-lg shadow p-6 md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4">Recently Added</h2>
+                {% if recent_items %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for item in recent_items %}
+                            <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200 media-card" data-type="{{ item.type }}">
+                                <div class="relative pb-[150%]">
+                                    {% if item.thumb %}
+                                        <img src="{{ item.thumb }}?X-Plex-Token={{ request.user.plex_token }}"
+                                             alt="{{ item.title }}"
+                                             class="absolute inset-0 w-full h-full object-cover rounded-t-lg">
+                                    {% else %}
+                                        <div class="absolute inset-0 bg-gray-100 flex items-center justify-center rounded-t-lg">
+                                            <span class="text-gray-400">No Image</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-semibold text-gray-900 truncate">{{ item.title }}</h3>
+                                    <div class="text-sm text-gray-600">
+                                        {% if item.year %}
+                                            <span>{{ item.year }}</span>
+                                        {% endif %}
+                                        {% if item.duration %}
+                                            <span>• {{ item.duration|duration_format }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        {% if item.added_at %}
+                                            Added {{ item.added_at|timestamp_to_datetime|timesince }} ago
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">No recently added content</p>
+                {% endif %}
             </div>
 
-            <!-- On Deck -->
-            <div class="card">
-                <h2 class="text-xl font-semibold mb-2">Continue Watching</h2>
-                <p class="text-gray-600 mb-4">Pick up where you left off</p>
-                <ul class="space-y-2">
-                    <li class="text-gray-700">Loading on deck items...</li>
-                </ul>
-            </div>
+            {# Library Stats #}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Library Stats</h2>
+                <div class="space-y-6">
+                    {# Movies Stats #}
+                    <div class="stats-section">
+                        <h3 class="font-medium text-gray-900 mb-2">Movies</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total:</span>
+                                <span class="font-semibold">{{ stats.movies.total }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Unwatched:</span>
+                                <span class="font-semibold">{{ stats.movies.unwatched }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total Duration:</span>
+                                <span class="font-semibold">{{ stats.movies.duration|duration_format }}</span>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Library Stats -->
-            <div class="card">
-                <h2 class="text-xl font-semibold mb-2">Library Stats</h2>
-                <p class="text-gray-600 mb-4">Your collection at a glance</p>
-                <div class="space-y-2">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Movies:</span>
-                        <span class="font-semibold">-</span>
+                    {# TV Shows Stats #}
+                    <div class="stats-section">
+                        <h3 class="font-medium text-gray-900 mb-2">TV Shows</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Shows:</span>
+                                <span class="font-semibold">{{ stats.shows.total }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Episodes:</span>
+                                <span class="font-semibold">{{ stats.shows.episodes }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Unwatched:</span>
+                                <span class="font-semibold">{{ stats.shows.unwatched }}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">TV Shows:</span>
-                        <span class="font-semibold">-</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Episodes:</span>
-                        <span class="font-semibold">-</span>
+
+                    {# Music Stats #}
+                    <div class="stats-section">
+                        <h3 class="font-medium text-gray-900 mb-2">Music</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Artists:</span>
+                                <span class="font-semibold">{{ stats.music.artists }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Albums:</span>
+                                <span class="font-semibold">{{ stats.music.albums }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tracks:</span>
+                                <span class="font-semibold">{{ stats.music.tracks }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {# On Deck Section #}
+            <div class="bg-white rounded-lg shadow p-6 md:col-span-3">
+                <h2 class="text-xl font-semibold mb-4">Continue Watching</h2>
+                {% if on_deck %}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {% for item in on_deck %}
+                            <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200 media-card" data-type="{{ item.type }}">
+                                <div class="relative pb-[150%]">
+                                    {% if item.thumb %}
+                                        <img src="{{ item.thumb }}"
+                                             alt="{{ item.title }}"
+                                             class="absolute inset-0 w-full h-full object-cover rounded-t-lg">
+                                    {% else %}
+                                        <div class="absolute inset-0 bg-gray-100 flex items-center justify-center rounded-t-lg">
+                                            <span class="text-gray-400">No Image</span>
+                                        </div>
+                                    {% endif %}
+
+                                    {# Progress Bar #}
+                                    {% if item.progress %}
+                                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+                                            <div class="h-full bg-plex-yellow" style="width: {{ item.progress }}%"></div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-semibold text-gray-900 truncate">{{ item.title }}</h3>
+                                    <div class="text-sm text-gray-600">
+                                        {% if item.progress %}
+                                            <span>{{ item.progress }}% complete</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">No items in progress</p>
+                {% endif %}
+            </div>
         </div>
     </div>
-{% endblock %}
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        // Library filtering
+        document.querySelectorAll('[data-type]').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active tab
+                document.querySelectorAll('[data-type]').forEach(b =>
+                    b.classList.remove('active', 'border-plex-yellow', 'text-plex-yellow', 'font-medium'));
+                button.classList.add('active', 'border-plex-yellow', 'text-plex-yellow', 'font-medium');
+
+                // Filter media cards
+                const type = button.dataset.type;
+                document.querySelectorAll('.media-card').forEach(card => {
+                    if (type === 'all' || card.dataset.type === type) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock extra_js %}

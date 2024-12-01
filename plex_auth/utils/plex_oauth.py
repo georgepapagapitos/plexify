@@ -12,7 +12,7 @@ from plex_auth.utils.constants import (
     PLEX_PIN_URL,
     REQUEST_TIMEOUT,
 )
-from plex_auth.utils.exceptions import PlexAPIError
+from plex_auth.utils.exceptions import PlexManagerError
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class PlexOAuth:
             Example: {'id': 12345, 'code': 'ABC123', 'expires_in': 1800}
 
         Raises:
-            PlexAPIError: If the API request fails
+            PlexManagerError: If the API request fails
         """
         try:
             data = {
@@ -77,14 +77,14 @@ class PlexOAuth:
 
             error_msg = f"Pin creation failed: {response.status_code} - {response.text}"
             logger.error(error_msg)
-            raise PlexAPIError(error_msg)
+            raise PlexManagerError(error_msg)
 
         except requests.RequestException as e:
             logger.exception("Network error during pin creation")
-            raise PlexAPIError(f"Failed to contact Plex API: {str(e)}")
+            raise PlexManagerError(f"Failed to contact Plex API: {str(e)}")
         except Exception as e:
             logger.exception("Unexpected error during pin creation")
-            raise PlexAPIError(f"Unexpected error: {str(e)}")
+            raise PlexManagerError(f"Unexpected error: {str(e)}")
 
     @classmethod
     def get_auth_url(cls, pin_code: str) -> str:
@@ -122,7 +122,7 @@ class PlexOAuth:
             Example: {'authToken': 'xxx', 'clientIdentifier': 'xxx'}
 
         Raises:
-            PlexAPIError: If the API request fails
+            PlexManagerError: If the API request fails
         """
         try:
             params = {
@@ -147,11 +147,11 @@ class PlexOAuth:
 
             error_msg = f"Pin check failed: {response.status_code} - {response.text}"
             logger.error(error_msg)
-            raise PlexAPIError(error_msg)
+            raise PlexManagerError(error_msg)
 
         except requests.RequestException as e:
             logger.exception("Network error during pin check")
-            raise PlexAPIError(f"Failed to contact Plex API: {str(e)}")
+            raise PlexManagerError(f"Failed to contact Plex API: {str(e)}")
         except Exception as e:
             logger.exception("Unexpected error during pin check")
-            raise PlexAPIError(f"Unexpected error: {str(e)}")
+            raise PlexManagerError(f"Unexpected error: {str(e)}")

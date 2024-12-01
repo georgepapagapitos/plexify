@@ -1,6 +1,6 @@
 # plex_auth/models/__init__.py
 
-from .server import PlexServer
-from .user import PlexUser
+from .plex_account import PlexAccount
+from .plex_server_connection import PlexServerConnection
 
-__all__ = ["PlexServer", "PlexUser"]
+__all__ = ["PlexAccount", "PlexServerConnection"]

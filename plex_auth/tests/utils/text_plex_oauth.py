@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from django.conf import settings
 from django.test import RequestFactory, TestCase
 
-from plex_auth.utils import PlexAPIError, PlexOAuth
+from plex_auth.utils import PlexManagerError, PlexOAuth
 
 
 class TestPlexOAuth(TestCase):
@@ -57,7 +57,7 @@ class TestPlexOAuth(TestCase):
         mock_response.text = "Error creating PIN"
         mock_post.return_value = mock_response
 
-        with self.assertRaises(PlexAPIError) as context:
+        with self.assertRaises(PlexManagerError) as context:
             PlexOAuth.get_pin()
 
         self.assertIn("Pin creation failed: 400", str(context.exception))
@@ -119,7 +119,7 @@ class TestPlexOAuth(TestCase):
         mock_response.text = "PIN not found"
         mock_get.return_value = mock_response
 
-        with self.assertRaises(PlexAPIError) as context:
+        with self.assertRaises(PlexManagerError) as context:
             PlexOAuth.check_pin("12345")
 
         self.assertIn("Pin check failed: 404", str(context.exception))
